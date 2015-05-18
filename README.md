@@ -4,7 +4,7 @@ Swiss Tournament Manager
 
 ### What is this repository for? ###
 
-Swiss Tournament Manager Python script that, using a Postgre Database,  allows you to create and manage a Swiss Tournament.
+Swiss Tournament Manager Python script that, using a Postgre Database,  allows you to create and manage Swiss Tournaments.
 
 
 ### How do I get set up? ###
