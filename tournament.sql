@@ -1,19 +1,11 @@
 -- Table definitions for the tournament project.
---
--- Put your SQL 'CREATE TABLE' statements in this file; also 'CREATE VIEW'
--- statements if you choose to use it.
---
--- You can write comments in this file by starting them with two dashes, like
--- these lines here.
 
-DROP TABLE t_matches CASCADE;
-DROP TABLE t_tournaments_players CASCADE;
-DROP TABLE t_tournaments CASCADE;
-DROP TABLE t_players CASCADE;
-DROP VIEW v_total_matches_a CASCADE;
-DROP VIEW v_total_matches_b CASCADE;
-DROP VIEW v_total_winners CASCADE;
+-- Remove all data, if present
+DROP DATABASE IF EXISTS tournament;
 
+CREATE DATABASE tournament ENCODING 'utf8';
+
+\c tournament;
 
 CREATE TABLE t_players (
 
@@ -33,18 +25,14 @@ CREATE TABLE t_matches (
 
     id SERIAL PRIMARY KEY,
     id_tournament INTEGER,
-    id_player_a INTEGER,
-    id_player_b INTEGER,
+    id_loser INTEGER,
     id_winner INTEGER,
 
     constraint fk_tournament_id
     foreign key(id_tournament) references t_tournaments(id),
 
-    constraint fk_player_a_id
-    foreign key(id_player_a) references t_players(id),
-
-    constraint fk_player_b_id
-    foreign key(id_player_b) references t_players(id),
+    constraint fk_loser_id
+    foreign key(id_loser) references t_players(id),
 
     constraint fk_winner_id
     foreign key(id_winner) references t_players(id)
@@ -66,38 +54,27 @@ CREATE TABLE t_tournaments_players (
 
   );
 
-INSERT INTO t_players (name) VALUES ('Primo');
-INSERT INTO t_players (name) VALUES ('Secondo');
-INSERT INTO t_players (name) VALUES ('Terzo');
-INSERT INTO t_players (name) VALUES ('Quarto');
-INSERT INTO t_players (name) VALUES ('Quinto');
+CREATE VIEW v_matches_won_per_player AS
+    SELECT t_players.id, t_players.name,
+    COUNT(t_matches.id_winner) AS total_matches_won
+    FROM t_players
+    LEFT JOIN t_matches
+    ON t_players.id = t_matches.id_winner
+    GROUP BY t_players.id
+    ORDER BY total_matches_won DESC;
 
-INSERT INTO t_tournaments (name) VALUES ('Scacchi');
-
-INSERT INTO t_matches (id_tournament, id_player_a, id_player_b, id_winner) VALUES (1, 1, 2, 1);
-INSERT INTO t_matches (id_tournament, id_player_a, id_player_b, id_winner) VALUES (1, 1, 3, 1);
-INSERT INTO t_matches (id_tournament, id_player_a, id_player_b, id_winner) VALUES (1, 1, 4, 1);
-INSERT INTO t_matches (id_tournament, id_player_a, id_player_b, id_winner) VALUES (1, 2, 2, 2);
-INSERT INTO t_matches (id_tournament, id_player_a, id_player_b, id_winner) VALUES (1, 5, 2, 2);
-INSERT INTO t_matches (id_tournament, id_player_a, id_player_b, id_winner) VALUES (1, 3, 1, 3);
-INSERT INTO t_matches (id_tournament, id_player_a, id_player_b, id_winner) VALUES (1, 3, 5, 3);
-INSERT INTO t_matches (id_tournament, id_player_a, id_player_b, id_winner) VALUES (1, 2, 5, 5);
-INSERT INTO t_matches (id_tournament, id_player_a, id_player_b, id_winner) VALUES (1, 1, 2, 1);
-
-CREATE VIEW v_total_winners AS
-SELECT t_players.id, t_players.name, COUNT(id_winner) as total_wins from t_players LEFT JOIN t_matches ON t_players.id = t_matches.id_winner GROUP BY t_players.id, t_players.name ORDER BY total_wins DESC;
-
-CREATE VIEW v_total_matches_a AS
-SELECT t_players.id, t_players.name, COUNT(t_matches.id_player_a) as total_matches from t_players LEFT JOIN t_matches ON t_players.id = t_matches.id_player_a GROUP BY t_players.id ORDER BY total_matches DESC;
-
-
-CREATE VIEW v_total_matches_b AS
-SELECT t_players.id, t_players.name, COUNT(t_matches.id_player_b) as total_matches from t_players LEFT JOIN t_matches ON t_players.id = t_matches.id_player_b GROUP BY t_players.id ORDER BY total_matches DESC;
-
-
-CREATE VIEW v_total_matches AS
-SELECT v_total_matches_a.id, v_total_matches_a.name, v_total_matches_a.total_matches as total_matches_a, v_total_matches_b.total_matches as total_matches_b, v_total_matches_a.total_matches + v_total_matches_b.total_matches as total_matches_played FROM v_total_matches_a, v_total_matches_b WHERE v_total_matches_a.id = v_total_matches_b.id;
+CREATE VIEW v_matches_lost_per_player AS
+    SELECT t_players.id, t_players.name,
+    COUNT(t_matches.id_loser) AS total_matches_lost
+    from t_players LEFT JOIN t_matches
+    ON t_players.id = t_matches.id_loser
+    GROUP BY t_players.id
+    ORDER BY total_matches_lost DESC;
 
 CREATE VIEW v_total_stats AS
-SELECT v_total_matches.id, v_total_matches.name, v_total_winners.total_wins, v_total_matches.total_matches_played from v_total_matches, v_total_winners where v_total_matches.id = v_total_winners.id;
-
+    SELECT v_matches_won_per_player.id, v_matches_won_per_player.name,
+           v_matches_won_per_player.total_matches_won AS total_matches_won,
+           v_matches_lost_per_player.total_matches_lost AS total_matches_lost,
+           v_matches_won_per_player.total_matches_won + v_matches_lost_per_player.total_matches_lost as total_matches_played
+    FROM v_matches_won_per_player, v_matches_lost_per_player
+    WHERE v_matches_won_per_player.id = v_matches_lost_per_player.id;

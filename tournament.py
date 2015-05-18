@@ -131,7 +131,7 @@ def playerStandings():
 
         con = connect()
         cur = con.cursor()
-        rows = cur.execute("select t_players.id, t_players.name, CASE WHEN v_total_stats.total_wins IS NULL THEN 0 ELSE v_total_stats.total_wins END, CASE WHEN v_total_stats.total_matches_played IS NULL THEN 0 ELSE v_total_stats.total_matches_played END from t_players left join v_total_stats on t_players.id = v_total_stats.id ORDER BY total_matches_played, total_wins DESC;")
+        rows = cur.execute("select t_players.id, t_players.name, CASE WHEN v_total_stats.total_matches_won IS NULL THEN 0 ELSE v_total_stats.total_matches_won END, CASE WHEN v_total_stats.total_matches_played IS NULL THEN 0 ELSE v_total_stats.total_matches_played END from t_players left join v_total_stats on t_players.id = v_total_stats.id ORDER BY total_matches_played, total_matches_won DESC;")
         rows = cur.fetchall()
         return rows
         con.commit()
@@ -162,7 +162,7 @@ def reportMatch(winner, loser):
         con = connect()
         cur = con.cursor()
         #cur.execute("INSERT INTO t_matches (id_player_a, id_player_b, id_winner) VALUES (%s)"), (winner, loser, winner,)
-        cur.execute('INSERT INTO t_matches (id_player_a, id_player_b, id_winner) VALUES ('+str(winner)+','+str(loser)+','+str(winner)+')')
+        cur.execute('INSERT INTO t_matches (id_loser, id_winner) VALUES ('+str(loser)+','+str(winner)+')')
         con.commit()
 
 
