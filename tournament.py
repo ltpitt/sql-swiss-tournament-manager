@@ -1,7 +1,12 @@
-#!/usr/bin/env python
-# 
-# tournament.py -- implementation of a Swiss-system tournament
-#
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+""" This module contains classes and methods for the Swiss Tournament Manager.
+"""
+
+__appname__ = "Swiss Tournament Manager"
+__author__ = "Davide Nastri"
+__version__ = "0.1beta"
+__license__ = "GNU GPL 3.0"
 
 import psycopg2
 import sys
@@ -9,11 +14,39 @@ import sys
 
 def connect():
     """Connect to the PostgreSQL database.  Returns a database connection."""
+
+
     return psycopg2.connect("dbname=tournament")
+
+
+def deleteTournaments():
+    """Remove all the tournaments records from the database."""
+
+
+    con = None
+
+    try:
+
+        con = connect()
+        cur = con.cursor()
+        cur.execute('TRUNCATE t_tournaments CASCADE;')
+	cur.execute('ALTER SEQUENCE t_tournaments_id_seq RESTART WITH 1;')
+        con.commit()
+
+    except psycopg2.DatabaseError, e:
+        print 'Error %s' % e
+        sys.exit(1)
+
+
+    finally:
+
+        if con:
+            con.close()
 
 
 def deleteMatches():
     """Remove all the match records from the database."""
+
 
     con = None
 
@@ -22,6 +55,7 @@ def deleteMatches():
         con = connect()
         cur = con.cursor()
         cur.execute('TRUNCATE t_matches CASCADE;')
+	cur.execute('ALTER SEQUENCE t_matches_id_seq RESTART WITH 1;')
         con.commit()
 
     except psycopg2.DatabaseError, e:
@@ -38,6 +72,8 @@ def deleteMatches():
 
 def deletePlayers():
     """Remove all the player records from the database."""
+
+
     con = None
 
     try:
@@ -45,6 +81,7 @@ def deletePlayers():
         con = connect()
         cur = con.cursor()
         cur.execute('TRUNCATE t_players CASCADE;')
+        cur.execute('ALTER SEQUENCE t_players_id_seq RESTART WITH 1;')
         con.commit()
 
     except psycopg2.DatabaseError, e:
@@ -61,6 +98,8 @@ def deletePlayers():
 
 def countPlayers():
     """Returns the number of players currently registered."""
+
+
     con = None
 
     try:
@@ -82,23 +121,105 @@ def countPlayers():
             con.close()
 
 
+def countMatches():
+    """Returns the number of matches currently registered."""
 
-def registerPlayer(name):
-    """Adds a player to the tournament database.
-  
-    The database assigns a unique serial id number for the player.  (This
-    should be handled by your SQL database schema, not in your Python code.)
-  
-    Args:
-      name: the player's full name (need not be unique).
-    """
+
     con = None
 
     try:
 
         con = connect()
         cur = con.cursor()
-        cur.execute("INSERT INTO t_players (name) VALUES (%s);", (name,))
+        cur.execute('select count(*) as total from t_matches;')
+        total = cur.fetchone()
+        return total[0]
+
+    except psycopg2.DatabaseError, e:
+        print 'Error %s' % e
+        sys.exit(1)
+
+
+    finally:
+
+        if con:
+            con.close()
+
+
+def countTournaments():
+    """Returns the number of tournaments currently registered."""
+
+
+    con = None
+
+    try:
+
+        con = connect()
+        cur = con.cursor()
+        cur.execute('select count(*) as total from t_tournaments;')
+        total = cur.fetchone()
+        return total[0]
+
+    except psycopg2.DatabaseError, e:
+        print 'Error %s' % e
+        sys.exit(1)
+
+
+    finally:
+
+        if con:
+            con.close()
+
+
+
+def registerPlayer(name, tournament):
+    """Adds a player to the tournament database.
+  
+    Args:
+      name: the player's full name (need not be unique).
+      tournament: the tournament id where the player is in (constraint with t_tournaments).
+    """
+
+
+    con = None
+
+    try:
+
+        con = connect()
+        cur = con.cursor()
+        cur.execute("INSERT INTO t_players (name) VALUES (%s) RETURNING id;", (name, ))
+        last_inserted_player_id = cur.fetchone()[0]
+        cur.execute("INSERT INTO t_tournaments_players (id_player, id_tournament) VALUES ("+str(last_inserted_player_id)+", %s);", (tournament,))
+        con.commit()
+
+    except psycopg2.DatabaseError, e:
+        print 'Error %s' % e
+        sys.exit(1)
+
+
+    finally:
+
+        if con:
+            con.close()
+
+
+def registerTournament(name):
+    """Adds a tournament to the tournament database.
+  
+    The database assigns a unique serial id number for the tournament.
+  
+    Args:
+      name: the tournament's full name (need not be unique).
+    """
+
+
+    con = None
+
+    try:
+
+        con = connect()
+        cur = con.cursor()
+        cur.execute("INSERT INTO t_tournaments (name) VALUES (%s);", (name, ))
         con.commit()
 
     except psycopg2.DatabaseError, e:
@@ -125,6 +246,8 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
+
+
     con = None
 
     try:
@@ -155,13 +278,14 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
+
+
     con = None
 
     try:
 
         con = connect()
         cur = con.cursor()
-        #cur.execute("INSERT INTO t_matches (id_player_a, id_player_b, id_winner) VALUES (%s)"), (winner, loser, winner,)
         cur.execute('INSERT INTO t_matches (id_loser, id_winner) VALUES ('+str(loser)+','+str(winner)+')')
         con.commit()
 
@@ -192,6 +316,8 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
+
+
     standings = playerStandings()
 
     swiss_pairings = []
@@ -208,6 +334,3 @@ def swissPairings():
             tmp_list.append(player[0])
             tmp_list.append(player[1])
     return swiss_pairings
-
-
-
