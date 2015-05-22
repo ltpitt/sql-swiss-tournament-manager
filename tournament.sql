@@ -10,7 +10,7 @@ CREATE DATABASE tournament ENCODING 'utf8';
 CREATE TABLE t_players (
 
     id SERIAL PRIMARY KEY,
-    name TEXT
+    name TEXT NOT NULL
 
     );
 
@@ -24,9 +24,9 @@ CREATE TABLE t_tournaments (
 CREATE TABLE t_matches (
 
     id SERIAL PRIMARY KEY,
-    id_tournament INTEGER,
-    id_loser INTEGER,
-    id_winner INTEGER,
+    id_tournament INTEGER NOT NULL,
+    id_loser INTEGER NOT NULL,
+    id_winner INTEGER NOT NULL,
 
     constraint fk_tournament_id
     foreign key(id_tournament) references t_tournaments(id),
@@ -41,8 +41,8 @@ CREATE TABLE t_matches (
 
 CREATE TABLE t_tournaments_players (
 
-    id_player INTEGER,
-    id_tournament INTEGER,
+    id_player INTEGER NOT NULL,
+    id_tournament INTEGER NOT NULL,
 
     constraint fk_player_id
     foreign key(id_player) references t_players(id),
