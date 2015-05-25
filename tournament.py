@@ -15,13 +15,11 @@ import sys
 def connect():
     """Connect to the PostgreSQL database.  Returns a database connection."""
 
-
     return psycopg2.connect("dbname=tournament")
 
 
 def deleteTournaments():
     """Remove all the tournaments records from the database."""
-
 
     con = None
 
@@ -30,7 +28,7 @@ def deleteTournaments():
         con = connect()
         cur = con.cursor()
         cur.execute('TRUNCATE t_tournaments CASCADE;')
-	cur.execute('ALTER SEQUENCE t_tournaments_id_seq RESTART WITH 1;')
+        cur.execute('ALTER SEQUENCE t_tournaments_id_seq RESTART WITH 1;')
         con.commit()
 
     except psycopg2.DatabaseError, e:
@@ -47,7 +45,6 @@ def deleteTournaments():
 def deleteMatches():
     """Remove all the match records from the database."""
 
-
     con = None
 
     try:
@@ -55,7 +52,7 @@ def deleteMatches():
         con = connect()
         cur = con.cursor()
         cur.execute('TRUNCATE t_matches CASCADE;')
-	cur.execute('ALTER SEQUENCE t_matches_id_seq RESTART WITH 1;')
+        cur.execute('ALTER SEQUENCE t_matches_id_seq RESTART WITH 1;')
         con.commit()
 
     except psycopg2.DatabaseError, e:
@@ -69,10 +66,8 @@ def deleteMatches():
             con.close()
 
 
-
 def deletePlayers():
     """Remove all the player records from the database."""
-
 
     con = None
 
@@ -95,35 +90,57 @@ def deletePlayers():
             con.close()
 
 
-
-def countPlayers():
+def countPlayers(id_tournament):
     """Returns the number of players currently registered."""
 
+    if id_tournament == 0:
 
-    con = None
+        con = None
 
-    try:
+        try:
 
-        con = connect()
-        cur = con.cursor()
-        cur.execute('select count(*) as total from t_players;')
-        total = cur.fetchone()
-        return total[0]
+            con = connect()
+            cur = con.cursor()
+            cur.execute('select count(*) as total from t_players;')
+            total = cur.fetchone()
+            return total[0]
 
-    except psycopg2.DatabaseError, e:
-        print 'Error %s' % e
-        sys.exit(1)
+        except psycopg2.DatabaseError, e:
+            print 'Error %s' % e
+            sys.exit(1)
 
 
-    finally:
+        finally:
 
-        if con:
-            con.close()
+            if con:
+                con.close()
+
+        con = None
+
+    else:
+
+        try:
+
+            con = connect()
+            cur = con.cursor()
+            cur.execute("""select count(*) as total from t_tournaments_players where id_tournament = %s;""",
+                        (id_tournament, ))
+            total = cur.fetchone()
+            return total[0]
+
+        except psycopg2.DatabaseError, e:
+            print 'Error %s' % e
+            sys.exit(1)
+
+
+        finally:
+
+            if con:
+                con.close()
 
 
 def countMatches():
     """Returns the number of matches currently registered."""
-
 
     con = None
 
@@ -149,7 +166,6 @@ def countMatches():
 def countTournaments():
     """Returns the number of tournaments currently registered."""
 
-
     con = None
 
     try:
@@ -171,15 +187,14 @@ def countTournaments():
             con.close()
 
 
-
-def registerPlayer(name, tournament):
+def registerPlayer(name, surname, email):
     """Adds a player to the tournament database.
   
     Args:
       name: the player's full name (need not be unique).
-      tournament: the tournament id where the player is in (constraint with t_tournaments).
+      surname: the player's full surname (need not be unique).
+      email: the player's full surname (need to be unique).
     """
-
 
     con = None
 
@@ -187,9 +202,36 @@ def registerPlayer(name, tournament):
 
         con = connect()
         cur = con.cursor()
-        cur.execute("INSERT INTO t_players (name) VALUES (%s) RETURNING id;", (name, ))
-        last_inserted_player_id = cur.fetchone()[0]
-        cur.execute("INSERT INTO t_tournaments_players (id_player, id_tournament) VALUES ("+str(last_inserted_player_id)+", %s);", (tournament,))
+        cur.execute("""INSERT INTO t_players (name, surname, email) VALUES (%s, %s, %s);""", (name, surname, email, ))
+        con.commit()
+
+    except psycopg2.DatabaseError, e:
+        print 'Error %s' % e
+        sys.exit(1)
+
+
+    finally:
+
+        if con:
+            con.close()
+
+
+def registerPlayerToTournament(id_player, id_tournament):
+    """Adds an existing player to an existing tournament.
+
+    Args:
+      id_player:     the player's id.
+      id_tournament: the tournament's id.
+    """
+
+    con = None
+
+    try:
+
+        con = connect()
+        cur = con.cursor()
+        cur.execute("""INSERT INTO t_tournaments_players (id_player, id_tournament) VALUES (%s, %s);""",
+                    (id_player, id_tournament, ))
         con.commit()
 
     except psycopg2.DatabaseError, e:
@@ -212,7 +254,6 @@ def registerTournament(name):
       name: the tournament's full name (need not be unique).
     """
 
-
     con = None
 
     try:
@@ -226,14 +267,13 @@ def registerTournament(name):
         print 'Error %s' % e
         sys.exit(1)
 
-
     finally:
 
         if con:
             con.close()
 
 
-def playerStandings():
+def playerStandings(id_tournament):
     """Returns a list of the players and their win records, sorted by wins.
 
     The first entry in the list should be the player in first place, or a player
@@ -247,23 +287,21 @@ def playerStandings():
         matches: the number of matches the player has played
     """
 
-
     con = None
 
     try:
 
         con = connect()
         cur = con.cursor()
-        rows = cur.execute("select t_players.id, t_players.name, CASE WHEN v_total_stats.total_matches_won IS NULL THEN 0 ELSE v_total_stats.total_matches_won END, CASE WHEN v_total_stats.total_matches_played IS NULL THEN 0 ELSE v_total_stats.total_matches_played END from t_players left join v_total_stats on t_players.id = v_total_stats.id ORDER BY total_matches_played, total_matches_won DESC;")
+        rows = cur.execute(
+            """SELECT id, name, wins, wins + losses as matches from v_total_stats WHERE id_tournament = %s GROUP BY id, name, wins, matches ORDER BY wins;""",
+            (id_tournament,))
         rows = cur.fetchall()
         return rows
-        con.commit()
-
 
     except psycopg2.DatabaseError, e:
         print 'Error %s' % e
         sys.exit(1)
-
 
     finally:
 
@@ -271,14 +309,18 @@ def playerStandings():
             con.close()
 
 
-def reportMatch(winner, loser):
+def reportMatch(tournament, loser, winner):
     """Records the outcome of a single match between two players.
 
     Args:
-      winner:  the id number of the player who won
+      tournament: the id number of the tournament played
       loser:  the id number of the player who lost
+      winner:  the id number of the player who won
+
     """
 
+    if loser == winner:
+        return "ERROR: A player cannot play alone"
 
     con = None
 
@@ -286,9 +328,27 @@ def reportMatch(winner, loser):
 
         con = connect()
         cur = con.cursor()
-        cur.execute('INSERT INTO t_matches (id_loser, id_winner) VALUES ('+str(loser)+','+str(winner)+')')
-        con.commit()
-
+        cur.execute(
+            """SELECT COUNT(*) FROM t_tournaments_players WHERE id_tournament = %s AND (id_player = %s OR id_player = %s);""",
+            (tournament, loser, winner,))
+        number_of_players_in_tournament = cur.fetchone()
+        if number_of_players_in_tournament[0] < 2:
+            return "ERROR: One of the players is not registered in the specified tournament"
+        elif number_of_players_in_tournament[0] == 2:
+            cur.execute(
+                """SELECT COUNT(*) FROM t_matches WHERE id_tournament = %s AND (id_winner = %s OR id_winner = %s) AND (id_loser = %s OR id_loser = %s);""",
+                (tournament, winner, loser, winner, loser,))
+            result = cur.fetchone()
+            if result[0] > 0:
+                not_a_rematch = False
+            else:
+                not_a_rematch = True
+            if not_a_rematch:
+                cur.execute("""INSERT INTO t_matches (id_tournament, id_loser, id_winner) VALUES (%s, %s, %s);""",
+                            (tournament, loser, winner,))
+                con.commit()
+            else:
+                return "ERROR: You tried to register a rematch"
 
     except psycopg2.DatabaseError, e:
         print 'Error %s' % e
@@ -299,9 +359,9 @@ def reportMatch(winner, loser):
 
         if con:
             con.close()
- 
- 
-def swissPairings():
+
+
+def swissPairings(id_tournament):
     """Returns a list of pairs of players for the next round of a match.
   
     Assuming that there are an even number of players registered, each player
@@ -317,8 +377,10 @@ def swissPairings():
         name2: the second player's name
     """
 
+    standings = playerStandings(id_tournament)
 
-    standings = playerStandings()
+    for rank, player in enumerate(standings):
+        print rank, player
 
     swiss_pairings = []
     tmp_list = []
