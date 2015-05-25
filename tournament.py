@@ -377,22 +377,10 @@ def swissPairings(id_tournament):
         name2: the second player's name
     """
 
+
     standings = playerStandings(id_tournament)
-
-    for rank, player in enumerate(standings):
-        print rank, player
-
     swiss_pairings = []
-    tmp_list = []
-    counter = 0
-    for player in standings:
-        counter += 1
-        if counter % 2 == 0:
-            tmp_list.append(player[0])
-            tmp_list.append(player[1])
-            swiss_pairings.append(tuple(tmp_list))
-            tmp_list = []
-        else:
-            tmp_list.append(player[0])
-            tmp_list.append(player[1])
+    for player1, player2 in zip(standings[0::2], standings[1::2]):
+        swiss_pairings.append((player1[0], player1[1], player2[0], player2[1]))
     return swiss_pairings
+

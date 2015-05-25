@@ -131,6 +131,30 @@ def testStandingsBeforeMatches():
                          "even if they have no matches played.")
     print "11. Newly registered players appear in the standings with no matches."
 
+    registerTournament("Tennis - Double")
+    registerPlayer("Player3", "Three", "playerthree@tournament.com")
+    registerPlayer("Player4", "Four", "playerfour@tournament.com")
+    registerPlayerToTournament(1, 2)
+    registerPlayerToTournament(2, 2)
+    registerPlayerToTournament(3, 2)
+    registerPlayerToTournament(4, 2)
+    standings = playerStandings(2)
+    if len(standings) < 4:
+        raise ValueError("Players should appear in playerStandings even before "
+                         "they have played any matches.")
+    elif len(standings) > 4:
+        raise ValueError("Only registered players should appear in standings.")
+    if len(standings[0]) != 4:
+        raise ValueError("Each playerStandings row should have four columns.")
+    [(id1, name1, wins1, matches1), (id2, name2, wins2, matches2), (id3, name3, wins3, matches3), (id4, name4, wins4, matches4)] = standings
+    if matches1 != 0 or matches2 != 0 or wins1 != 0 or wins2 != 0 or matches3 != 0 or matches4 != 0 or wins3 != 0 or wins4 != 0:
+        raise ValueError(
+            "Newly registered players should have no matches or wins.")
+    if set([name1, name2, name3, name4]) != set(["Player1", "Player2", "Player3", "Player4"]):
+        raise ValueError("Registered players' names should appear in standings, "
+                         "even if they have no matches played.")
+    print "11. Newly registered players appear in the standings with no matches."
+
 
 def testReportMatches():
     deleteTournaments()
@@ -183,7 +207,7 @@ def testPairings():
     registerPlayer("Player2", "Two", "playertwo@tournament.com")
     registerPlayer("Player3", "Three", "playerthree@tournament.com")
     registerPlayer("Player4", "Four", "playerfour@tournament.com")
-    registerTournament("Tennis")
+    registerTournament("Tennis - Double")
     registerPlayerToTournament(1, 1)
     registerPlayerToTournament(2, 1)
     registerPlayerToTournament(3, 1)
@@ -226,11 +250,9 @@ def myTest():
     registerPlayerToTournament(5, 2)
     registerPlayerToTournament(6, 2)
     reportMatch(1, 1, 2)
-    reportMatch(1, 1, 2)
-    reportMatch(1, 7, 2)
 
     standings = playerStandings(1)
-    standings2 = playerStandings(2)
+
 
 
 if __name__ == '__main__':
