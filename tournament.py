@@ -29,7 +29,7 @@ def deleteMatches():
     try:
         con = connect()
         cur = con.cursor()
-        cur.execute('TRUNCATE t_matches CASCADE;')
+        cur.execute('DELETE FROM t_matches;')
         con.commit()
 
     except psycopg2.DatabaseError, e:
@@ -48,7 +48,7 @@ def deletePlayers():
     try:
         con = connect()
         cur = con.cursor()
-        cur.execute('TRUNCATE t_players CASCADE;')
+        cur.execute('DELETE FROM t_players;')
         con.commit()
 
     except psycopg2.DatabaseError, e:
