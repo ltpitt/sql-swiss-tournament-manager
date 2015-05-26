@@ -15,6 +15,8 @@ Swiss Tournament Manager Python script that, using a Postgre Database,  allows y
 * Import tournament.sql into your PostgreSQL installation with: psql -f tournament.sql
 * Run "test.py" using Python and open it with a text editor to understand how to customize it: the code is commented
 
+If you want to try the extra version follow the same instructions but using the *_extra.* files
+
 ### Contribution guidelines ###
 
 * If you have any idea or suggestion contact directly the Repo Owner
