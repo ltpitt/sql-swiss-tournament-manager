@@ -13,13 +13,18 @@ import sys
 
 
 def connect():
-    """Connect to the PostgreSQL database.  Returns a database connection."""
+    """Connects to the PostgreSQL database.
+
+    Returns:
+        A database connection.
+    """
 
     return psycopg2.connect("dbname=tournament")
 
 
 def deleteTournaments():
-    """Remove all the tournaments records from the database."""
+    """Removes all the tournaments records from the database.
+    """
 
     con = None
 
@@ -43,7 +48,8 @@ def deleteTournaments():
 
 
 def deleteMatches():
-    """Remove all the match records from the database."""
+    """Removes all the match records from the database.
+    """
 
     con = None
 
@@ -67,7 +73,8 @@ def deleteMatches():
 
 
 def deletePlayers():
-    """Remove all the player records from the database."""
+    """Remove all the player records from the database.
+    """
 
     con = None
 
@@ -90,10 +97,18 @@ def deletePlayers():
             con.close()
 
 
-def countPlayers(id_tournament):
-    """Returns the number of players currently registered."""
+def countPlayers(tournament):
+    """Returns the number of players currently registered.
 
-    if id_tournament == 0:
+    Args:
+      tournament: the id number of the tournament played.
+      If number 0 is used it selects all tournaments
+
+    Returns:
+      Total number of players in selected tournament or all tournaments
+    """
+
+    if tournament == 0:
 
         con = None
 
@@ -124,7 +139,7 @@ def countPlayers(id_tournament):
             con = connect()
             cur = con.cursor()
             cur.execute("""select count(*) as total from t_tournaments_players where id_tournament = %s;""",
-                        (id_tournament, ))
+                        (tournament, ))
             total = cur.fetchone()
             return total[0]
 
@@ -140,7 +155,8 @@ def countPlayers(id_tournament):
 
 
 def countMatches():
-    """Returns the number of matches currently registered."""
+    """Returns the number of matches currently registered.
+    """
 
     con = None
 
@@ -164,7 +180,8 @@ def countMatches():
 
 
 def countTournaments():
-    """Returns the number of tournaments currently registered."""
+    """Returns the number of tournaments currently registered.
+    """
 
     con = None
 
@@ -216,12 +233,12 @@ def registerPlayer(name, surname, email):
             con.close()
 
 
-def registerPlayerToTournament(id_player, id_tournament):
+def registerPlayerToTournament(player, tournament):
     """Adds an existing player to an existing tournament.
 
     Args:
-      id_player:     the player's id.
-      id_tournament: the tournament's id.
+      player:     the player's id
+      tournament: the tournament's id
     """
 
     con = None
@@ -231,7 +248,7 @@ def registerPlayerToTournament(id_player, id_tournament):
         con = connect()
         cur = con.cursor()
         cur.execute("""INSERT INTO t_tournaments_players (id_player, id_tournament) VALUES (%s, %s);""",
-                    (id_player, id_tournament, ))
+                    (player, tournament, ))
         con.commit()
 
     except psycopg2.DatabaseError, e:
@@ -248,10 +265,8 @@ def registerPlayerToTournament(id_player, id_tournament):
 def registerTournament(name):
     """Adds a tournament to the tournament database.
   
-    The database assigns a unique serial id number for the tournament.
-  
     Args:
-      name: the tournament's full name (need not be unique).
+      name: the tournament's full name (need not be unique)
     """
 
     con = None
@@ -273,11 +288,14 @@ def registerTournament(name):
             con.close()
 
 
-def playerStandings(id_tournament):
+def playerStandings(tournament):
     """Returns a list of the players and their win records, sorted by wins.
 
     The first entry in the list should be the player in first place, or a player
     tied for first place if there is currently a tie.
+
+    Args:
+      tournament: the id number of the tournament played.
 
     Returns:
       A list of tuples, each of which contains (id, name, wins, matches):
@@ -293,11 +311,11 @@ def playerStandings(id_tournament):
 
         con = connect()
         cur = con.cursor()
-        rows = cur.execute(
+        standings = cur.execute(
             """SELECT id, name, wins, wins + losses as matches from v_total_stats WHERE id_tournament = %s GROUP BY id, name, wins, matches ORDER BY wins;""",
-            (id_tournament,))
-        rows = cur.fetchall()
-        return rows
+            (tournament,))
+        standings = cur.fetchall()
+        return standings
 
     except psycopg2.DatabaseError, e:
         print 'Error %s' % e
@@ -317,6 +335,13 @@ def reportMatch(tournament, loser, winner):
       loser:  the id number of the player who lost
       winner:  the id number of the player who won
 
+    Returns:
+      If a rematch is registered it returns this string:
+      "ERROR: You tried to register a rematch"
+      If player/s are not registered in tournament it returns this string:
+      "ERROR: One/Both of the players is not registered in the specified tournament"
+      If a player is playing with himself it returns this string:
+      "ERROR: A player cannot play alone"
     """
 
     if loser == winner:
@@ -338,8 +363,8 @@ def reportMatch(tournament, loser, winner):
             cur.execute(
                 """SELECT COUNT(*) FROM t_matches WHERE id_tournament = %s AND (id_winner = %s OR id_winner = %s) AND (id_loser = %s OR id_loser = %s);""",
                 (tournament, winner, loser, winner, loser,))
-            result = cur.fetchone()
-            if result[0] > 0:
+            rematch = cur.fetchone()
+            if rematch[0] > 0:
                 not_a_rematch = False
             else:
                 not_a_rematch = True
@@ -361,14 +386,17 @@ def reportMatch(tournament, loser, winner):
             con.close()
 
 
-def swissPairings(id_tournament):
+def swissPairings(tournament):
     """Returns a list of pairs of players for the next round of a match.
   
     Assuming that there are an even number of players registered, each player
     appears exactly once in the pairings.  Each player is paired with another
     player with an equal or nearly-equal win record, that is, a player adjacent
     to him or her in the standings.
-  
+
+    Args:
+      tournament: the id number of the tournament played
+
     Returns:
       A list of tuples, each of which contains (id1, name1, id2, name2)
         id1: the first player's unique id
@@ -377,10 +405,8 @@ def swissPairings(id_tournament):
         name2: the second player's name
     """
 
-
-    standings = playerStandings(id_tournament)
+    standings = playerStandings(tournament)
     swiss_pairings = []
     for player1, player2 in zip(standings[0::2], standings[1::2]):
         swiss_pairings.append((player1[0], player1[1], player2[0], player2[1]))
     return swiss_pairings
-
