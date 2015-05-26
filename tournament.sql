@@ -1,15 +1,14 @@
 -- Table definitions for the tournament project.
 
 -- Remove all data, if present
-
 \c vagrant
-
 DROP DATABASE tournament;
 
+-- Create tournament database and use it
 CREATE DATABASE tournament ENCODING 'utf8';
-
 \c tournament;
 
+-- Create the table that will hold all players.
 CREATE TABLE t_players (
 
     id SERIAL PRIMARY KEY,
@@ -19,6 +18,7 @@ CREATE TABLE t_players (
 
     );
 
+-- Create the table that will hold all the tournaments.
 CREATE TABLE t_tournaments (
 
     id SERIAL PRIMARY KEY,
@@ -26,6 +26,7 @@ CREATE TABLE t_tournaments (
 
     );
 
+-- Create the table that will hold all match results.
 CREATE TABLE t_matches (
 
     id SERIAL PRIMARY KEY,
@@ -44,6 +45,7 @@ CREATE TABLE t_matches (
 
     );
 
+-- Create the table that will hold all the player per tournament registrations.
 CREATE TABLE t_tournaments_players (
 
     id_player INTEGER NOT NULL,
@@ -65,7 +67,6 @@ CREATE VIEW v_players_per_tournament AS
     FROM t_players
     JOIN t_tournaments_players
     ON t_players.id = t_tournaments_players.id_player;
-
 
 CREATE VIEW v_matches_lost_per_player_per_tournament AS
     SELECT v_players_per_tournament.id_player, v_players_per_tournament.player_name, v_players_per_tournament.id_tournament, COUNT(t_matches.id_loser) AS total_matches_lost
