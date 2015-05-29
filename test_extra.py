@@ -2,7 +2,7 @@
 #
 # Test cases for tournament.py
 
-from tournament import *
+from tournament_extra import *
 import os
 
 
@@ -38,7 +38,7 @@ def testCountTournaments():
 
 def testCountMatches():
     deleteMatches()
-    c = countMatches()
+    c = countMatches(1)
     if c == '0':
         raise TypeError(
             "countMatches() should return numeric zero, not string '0'.")

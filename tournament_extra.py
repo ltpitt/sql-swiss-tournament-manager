@@ -23,7 +23,8 @@ def connect():
 
 
 def deleteTournaments():
-    """Removes all the tournaments records from the database.
+    """Removes all the tournaments records from the database and
+        resets t_tournaments.id counter
     """
 
     con = None
@@ -48,7 +49,8 @@ def deleteTournaments():
 
 
 def deleteMatches():
-    """Removes all the match records from the database.
+    """Removes all the match records from the database and resets t_tournaments
+        resets t_matches.id counter
     """
 
     con = None
@@ -74,6 +76,7 @@ def deleteMatches():
 
 def deletePlayers():
     """Remove all the player records from the database.
+        resets t_players.id counter
     """
 
     con = None
@@ -154,8 +157,11 @@ def countPlayers(tournament):
                 con.close()
 
 
-def countMatches():
-    """Returns the number of matches currently registered.
+def countMatches(tournament):
+    """Counts the number of matches currently registered.
+
+    Returns:
+      Total number of matches in selected tournament or all tournaments
     """
 
     con = None
