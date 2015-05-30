@@ -2,7 +2,7 @@
 
 -- Removes all data, if present.
 \c vagrant
-DROP DATABASE tournament;
+DROP DATABASE IF EXISTS tournament;
 
 -- Creates tournament database and use it.
 CREATE DATABASE tournament ENCODING 'utf8';

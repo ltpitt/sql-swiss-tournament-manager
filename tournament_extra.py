@@ -1,5 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+import psycopg2
+import sys
+
 """ This module contains classes and methods for the Swiss Tournament Manager.
 """
 
@@ -7,9 +10,6 @@ __appname__ = "Swiss Tournament Manager"
 __author__ = "Davide Nastri"
 __version__ = "0.1beta"
 __license__ = "MIT"
-
-import psycopg2
-import sys
 
 
 def connect():
@@ -41,7 +41,6 @@ def deleteTournaments():
         print 'Error %s' % e
         sys.exit(1)
 
-
     finally:
 
         if con:
@@ -67,7 +66,6 @@ def deleteMatches():
         print 'Error %s' % e
         sys.exit(1)
 
-
     finally:
 
         if con:
@@ -92,7 +90,6 @@ def deletePlayers():
     except psycopg2.DatabaseError, e:
         print 'Error %s' % e
         sys.exit(1)
-
 
     finally:
 
@@ -127,7 +124,6 @@ def countPlayers(tournament):
             print 'Error %s' % e
             sys.exit(1)
 
-
         finally:
 
             if con:
@@ -141,15 +137,14 @@ def countPlayers(tournament):
 
             con = connect()
             cur = con.cursor()
-            cur.execute("""select count(*) as total from t_tournaments_players where id_tournament = %s;""",
-                        (tournament, ))
+            cur.execute("""SELECT count(*) AS total FROM t_tournaments_players \
+            WHERE id_tournament = %s;""", (tournament, ))
             total = cur.fetchone()
             return total[0]
 
         except psycopg2.DatabaseError, e:
             print 'Error %s' % e
             sys.exit(1)
-
 
         finally:
 
@@ -178,7 +173,6 @@ def countMatches(tournament):
         print 'Error %s' % e
         sys.exit(1)
 
-
     finally:
 
         if con:
@@ -203,7 +197,6 @@ def countTournaments():
         print 'Error %s' % e
         sys.exit(1)
 
-
     finally:
 
         if con:
@@ -212,7 +205,7 @@ def countTournaments():
 
 def registerPlayer(name, surname, email):
     """Adds a player to the tournament database.
-  
+
     Args:
       name: the player's full name (need not be unique).
       surname: the player's full surname (need not be unique).
@@ -225,13 +218,13 @@ def registerPlayer(name, surname, email):
 
         con = connect()
         cur = con.cursor()
-        cur.execute("""INSERT INTO t_players (name, surname, email) VALUES (%s, %s, %s);""", (name, surname, email, ))
+        cur.execute("""INSERT INTO t_players (name, surname, email) \
+        VALUES (%s, %s, %s);""", (name, surname, email, ))
         con.commit()
 
     except psycopg2.DatabaseError, e:
         print 'Error %s' % e
         sys.exit(1)
-
 
     finally:
 
@@ -253,14 +246,14 @@ def registerPlayerToTournament(player, tournament):
 
         con = connect()
         cur = con.cursor()
-        cur.execute("""INSERT INTO t_tournaments_players (id_player, id_tournament) VALUES (%s, %s);""",
-                    (player, tournament, ))
+        cur.execute("""INSERT INTO t_tournaments_players (id_player, \
+                       id_tournament) VALUES (%s, %s);""", (player,
+                                                            tournament, ))
         con.commit()
 
     except psycopg2.DatabaseError, e:
         print 'Error %s' % e
         sys.exit(1)
-
 
     finally:
 
@@ -270,7 +263,7 @@ def registerPlayerToTournament(player, tournament):
 
 def registerTournament(name):
     """Adds a tournament to the tournament database.
-  
+
     Args:
       name: the tournament's full name (need not be unique)
     """
@@ -297,8 +290,8 @@ def registerTournament(name):
 def playerStandings(tournament):
     """Returns a list of the players and their win records, sorted by wins.
 
-    The first entry in the list should be the player in first place, or a player
-    tied for first place if there is currently a tie.
+    The first entry in the list should be the player in first place, or a
+    player tied for first place if there is currently a tie.
 
     Args:
       tournament: the id number of the tournament played.
@@ -317,9 +310,9 @@ def playerStandings(tournament):
 
         con = connect()
         cur = con.cursor()
-        standings = cur.execute(
-            """SELECT id, name, wins, wins + losses as matches from v_total_stats WHERE id_tournament = %s GROUP BY id, name, wins, matches ORDER BY wins;""",
-            (tournament,))
+        standings = cur.execute("""SELECT id, name, wins, wins + losses as \
+        matches from v_total_stats WHERE id_tournament = %s GROUP BY id,\
+        name, wins, matches ORDER BY wins;""", (tournament,))
         standings = cur.fetchall()
         return standings
 
@@ -345,13 +338,14 @@ def reportMatch(tournament, loser, winner):
       If a rematch is registered it returns this string:
       "ERROR: You tried to register a rematch"
       If player/s are not registered in tournament it returns this string:
-      "ERROR: One/Both of the players is not registered in the specified tournament"
+      "ERROR: One/Both of the players is not registered in the specified
+      tournament"
       If a player is playing with himself it returns this string:
       "ERROR: A player cannot play alone"
     """
 
     if loser == winner:
-        return "ERROR: A player cannot play alone"
+        return "ERROR: Rematch"
 
     con = None
 
@@ -359,23 +353,25 @@ def reportMatch(tournament, loser, winner):
 
         con = connect()
         cur = con.cursor()
-        cur.execute(
-            """SELECT COUNT(*) FROM t_tournaments_players WHERE id_tournament = %s AND (id_player = %s OR id_player = %s);""",
-            (tournament, loser, winner,))
+        cur.execute("""SELECT COUNT(*) FROM t_tournaments_players WHERE \
+            id_tournament = %s AND (id_player = %s OR id_player = %s);""",
+                    (tournament, loser, winner,))
         number_of_players_in_tournament = cur.fetchone()
         if number_of_players_in_tournament[0] < 2:
-            return "ERROR: One of the players is not registered in the specified tournament"
+            return "ERROR: player/s not registered in tournament"
         elif number_of_players_in_tournament[0] == 2:
-            cur.execute(
-                """SELECT COUNT(*) FROM t_matches WHERE id_tournament = %s AND (id_winner = %s OR id_winner = %s) AND (id_loser = %s OR id_loser = %s);""",
-                (tournament, winner, loser, winner, loser,))
+            cur.execute("""SELECT COUNT(*) FROM t_matches WHERE \
+            id_tournament = %s AND (id_winner = %s OR id_winner = %s)\
+            AND (id_loser = %s OR id_loser = %s);""",
+                        (tournament, winner, loser, winner, loser,))
             rematch = cur.fetchone()
             if rematch[0] > 0:
                 not_a_rematch = False
             else:
                 not_a_rematch = True
             if not_a_rematch:
-                cur.execute("""INSERT INTO t_matches (id_tournament, id_loser, id_winner) VALUES (%s, %s, %s);""",
+                cur.execute("""INSERT INTO t_matches (id_tournament, \
+                id_loser, id_winner) VALUES (%s, %s, %s);""",
                             (tournament, loser, winner,))
                 con.commit()
             else:
@@ -385,7 +381,6 @@ def reportMatch(tournament, loser, winner):
         print 'Error %s' % e
         sys.exit(1)
 
-
     finally:
 
         if con:
@@ -394,7 +389,7 @@ def reportMatch(tournament, loser, winner):
 
 def swissPairings(tournament):
     """Returns a list of pairs of players for the next round of a match.
-  
+
     Assuming that there are an even number of players registered, each player
     appears exactly once in the pairings.  Each player is paired with another
     player with an equal or nearly-equal win record, that is, a player adjacent

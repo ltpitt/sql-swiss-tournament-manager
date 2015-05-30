@@ -1,7 +1,8 @@
 -- Table definitions for the Swiss Tournament Manager.
 
 -- Removes tournament database.
-DROP DATABASE tournament;
+\c vagrant
+DROP DATABASE IF EXISTS tournament;
 
 -- Creates tournament database and use it.
 CREATE DATABASE tournament ENCODING 'utf8';

@@ -175,7 +175,7 @@ def testReportMatches():
     reportMatch(1, id1, id2)
     reportMatch(1, id3, id4)
 
-    if reportMatch(1, id4, 200) != "ERROR: One of the players is not registered in the specified tournament":
+    if reportMatch(1, id4, 200) != "ERROR: player/s not registered in tournament":
         raise ValueError("It is possible to register a match for a player not registered in the specified tournament.")
 
     if reportMatch(1, 1, 2) != "ERROR: You tried to register a rematch":
@@ -184,7 +184,7 @@ def testReportMatches():
     if reportMatch(1, 2, 1) != "ERROR: You tried to register a rematch":
         raise ValueError("It is possible to play a rematch.")
 
-    if reportMatch(1, 1, 1) != "ERROR: A player cannot play alone":
+    if reportMatch(1, 1, 1) != "ERROR: Rematch":
         raise ValueError("It is possible to have a match with the same player both winning and losing.")
 
     standings = playerStandings(1)

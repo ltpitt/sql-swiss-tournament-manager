@@ -1,5 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+import psycopg2
+
 """ This module contains classes and methods for the Swiss Tournament Manager.
 """
 
@@ -7,8 +9,6 @@ __appname__ = "Swiss Tournament Manager"
 __author__ = "Davide Nastri"
 __version__ = "1.0"
 __license__ = "MIT"
-
-import psycopg2
 
 
 def connect():
@@ -84,7 +84,7 @@ def countPlayers():
 
 def registerPlayer(name):
     """Adds a player to the tournament database.
-  
+
     Args:
       name: the player's full name (need not be unique).
     """
@@ -119,7 +119,8 @@ def playerStandings():
     try:
         con = connect()
         cur = con.cursor()
-        rows = cur.execute("select id, name, wins, matches from v_total_stats ORDER BY wins DESC;")
+        rows = cur.execute("select id, name, wins, matches from v_total_stats \
+        ORDER BY wins DESC;")
         rows = cur.fetchall()
         return rows
 
@@ -143,7 +144,8 @@ def reportMatch(winner, loser):
     try:
         con = connect()
         cur = con.cursor()
-        cur.execute("""INSERT INTO t_matches (id_winner, id_loser) VALUES (%s, %s);""", (winner, loser,))
+        cur.execute("""INSERT INTO t_matches (id_winner, id_loser) VALUES \
+        (%s, %s);""", (winner, loser,))
         con.commit()
 
     except psycopg2.DatabaseError, e:
